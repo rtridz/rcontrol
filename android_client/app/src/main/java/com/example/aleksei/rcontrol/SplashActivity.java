@@ -8,7 +8,7 @@ import android.widget.ProgressBar;
 
 public class SplashActivity extends Activity {
 
-    private int timeWaite = 2000;
+    private int timeWaite = 5000;
     private int timeStep = 100;
 
     private ProgressBar spinner;
