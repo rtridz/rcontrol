@@ -1,6 +1,4 @@
-import Routes.Category;
-import Routes.Handler;
-import Routes.Hello;
+import Routes.*;
 import com.sun.istack.internal.Nullable;
 
 import java.util.HashMap;
@@ -15,7 +13,9 @@ public class Router {
         routes = new HashMap<>();
         // TODO Hard Code
         addRoute("/category", Category.class.getName());
-        addRoute("/hello", Hello.class.getName());
+        addRoute("/vendor", Vendor.class.getName());
+        addRoute("/model", Model.class.getName());
+        addRoute("/dump", Dump.class.getName());
     }
 
     @Nullable

@@ -1,13 +1,11 @@
 package Database;
 
-import Database.DBService;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
+import org.json.JSONArray;
 
-import java.util.LinkedList;
-import java.util.List;
 /**
  * Created by vadim on 23.09.15.
  */
@@ -26,11 +24,11 @@ public class DBServiceImpl implements DBService {
         db = mongoClient.getDatabase(DB_NAME);
     }
 
-    public List<Document> find() {
-        List<Document> documents = new LinkedList<>();
+    public JSONArray find() {
+        JSONArray documents = new JSONArray();
         try (MongoCursor<Document> cursor = db.getCollection(COLLECTION_NAME).find().iterator()) {
             while (cursor.hasNext()) {
-                documents.add(cursor.next());
+                documents.put(cursor.next());
             }
         }
         return documents;
