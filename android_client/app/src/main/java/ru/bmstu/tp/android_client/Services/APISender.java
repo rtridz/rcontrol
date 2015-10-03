@@ -1,7 +1,5 @@
 package ru.bmstu.tp.android_client.Services;
 
-import android.content.ContentValues;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.SAXException;
@@ -15,45 +13,47 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import ru.bmstu.tp.android_client.DataBase.DBContentProvider;
-import ru.bmstu.tp.android_client.DataBase.DBSchemas;
 import ru.bmstu.tp.android_client.Services.Exceptions.BadRequestException;
-import ru.bmstu.tp.android_client.Services.Exceptions.BadSessionIdException;
+import ru.bmstu.tp.android_client.Services.Exceptions.BadUserIdException;
+import ru.bmstu.tp.android_client.Services.Exceptions.ForbiddenException;
 import ru.bmstu.tp.android_client.Services.Exceptions.InitialServerException;
+import ru.bmstu.tp.android_client.Services.Exceptions.NonAuthoritativeException;
+import ru.bmstu.tp.android_client.Services.Exceptions.NotFoundException;
 import ru.bmstu.tp.android_client.Services.Exceptions.ServerConnectException;
 import ru.bmstu.tp.android_client.Services.SQLReader.NmapScanResult;
-import ru.bmstu.tp.android_client.Services.SQLReader.NmapScanResultParser;
 
 public class APISender {
-    private static final String SERVER_URL = "http://127.0.0.1:8080/nmap";
-    private enum Status {
-        OK, ERROR, BAD_ID, BAD_REQUEST, WAIT
-    }
-    private int userId = 0;
+    public static final String SERVER_URL = "http://127.0.0.1:8080";
+
+    private int userId;
+    private String cookies = null;
 
     public int getUserId() {
         return userId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     public APISender(int userId) {
         this.userId = userId;
     }
 
-    private StringBuilder sendRequest(StringBuilder url, String data) {
+    private StringBuilder sendRequest(StringBuilder url, String data) throws NonAuthoritativeException,
+            BadRequestException, ForbiddenException, NotFoundException, InitialServerException, ServerConnectException {
         URL getReq;
         try {
             getReq = new URL(url.toString());
         } catch (MalformedURLException e) {
             return null;
         }
-
         HttpURLConnection con;
         try {
-            con = (HttpURLConnection)getReq.openConnection();
+            con = (HttpURLConnection) getReq.openConnection();
             if (data != null) {
                 con.setDoOutput(true);
                 con.setChunkedStreamingMode(0);
@@ -61,7 +61,7 @@ public class APISender {
                 out.write(data.getBytes());
             }
         } catch (IOException e) {
-            return null;
+            throw new ServerConnectException();
         }
         StringBuilder response = new StringBuilder();
         InputStream is = null;
@@ -69,7 +69,20 @@ public class APISender {
         try {
             is = con.getInputStream();
             if (con.getResponseCode() != 200) {
-                return null;
+                switch (con.getResponseCode()) {
+                    case 203:
+                        throw new NonAuthoritativeException();
+                    case 400:
+                        throw new BadRequestException();
+                    case 403:
+                        throw new ForbiddenException();
+                    case 404:
+                        throw new NotFoundException();
+                    case 500:
+                        throw new InitialServerException();
+                    default:
+                        throw new InitialServerException();
+                }
             }
             reader = new BufferedReader(new InputStreamReader(is));
             String line;
@@ -77,123 +90,77 @@ public class APISender {
                 response.append(line);
             }
         } catch (IOException e) {
-            return null;
+            throw new ServerConnectException();
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
-                } catch (IOException ignore) {}
+                } catch (IOException ignore) {
+                }
             }
             if (is != null) {
                 try {
                     is.close();
-                } catch (IOException ignore) {}
+                } catch (IOException ignore) {
+                }
             }
             con.disconnect();
         }
         return response;
     }
 
-    public Integer updateSessionId() throws ServerConnectException, InitialServerException {
+    public void registrate(String name, String password) throws ServerConnectException, InitialServerException, BadRequestException {
         StringBuilder url = new StringBuilder(SERVER_URL);
-        url.append("/user_id");
-        StringBuilder response = sendRequest(url, null);
+        url.append("/regist");
+        String data = String.format("{name: ?, password: ?}", name, password);
+        StringBuilder response = null;
+        try {
+            response = sendRequest(url, data);
+        } catch (NonAuthoritativeException | ForbiddenException | NotFoundException ignore) {}
         if (response == null || response.length() == 0) {
             throw new ServerConnectException();
         }
-        JSONObject json;
         try {
-            json = new JSONObject(response.toString());
-            switch (Status.valueOf(json.getString("status"))) {
-                case OK :
-                    userId = json.getInt("id");
-                    return userId;
-                default:
-                    throw new InitialServerException();
-            }
-        } catch (JSONException | IllegalArgumentException e) {
+            JSONObject json = new JSONObject(response.toString());
+            userId = (Integer) json.get("token");
+        } catch (JSONException | IllegalArgumentException | ClassCastException e) {
             throw new InitialServerException();
         }
     }
 
-    public void sendGcmId(String GcmId) throws
-            ServerConnectException, InitialServerException, BadSessionIdException, BadRequestException {
-        if (userId == 0) {
-            throw new BadSessionIdException();
-        }
+    public void authorize(String name, String password) throws ServerConnectException, InitialServerException, BadRequestException {
         StringBuilder url = new StringBuilder(SERVER_URL);
-        url.append("/gcm_id?id=" + userId);
-        StringBuilder response = sendRequest(url, GcmId);
+        url.append("/auth");
+        String data = String.format("{name: ?, password: ?}", name, password);
+        StringBuilder response = null;
+        try {
+            response = sendRequest(url, data);
+        } catch (NonAuthoritativeException | ForbiddenException | NotFoundException ignore) {}
         if (response == null || response.length() == 0) {
             throw new ServerConnectException();
         }
-        JSONObject json;
         try {
-            json = new JSONObject(response.toString());
-            switch (Status.valueOf(json.getString("status"))) {
-                case OK :
-                    break;
-                case BAD_ID :
-                    throw new BadSessionIdException();
-                case BAD_REQUEST :
-                    throw new BadRequestException();
-                default:
-                    throw new InitialServerException();
-            }
-        } catch (JSONException e) {
+            JSONObject json = new JSONObject(response.toString());
+            userId = (Integer) json.get("token");
+        } catch (JSONException | IllegalArgumentException | ClassCastException e) {
             throw new InitialServerException();
         }
     }
 
-    public void sendCheckRequest() throws ServerConnectException, InitialServerException {
+    public void sendGcmId(String gcmId) throws ServerConnectException, InitialServerException {
         StringBuilder url = new StringBuilder(SERVER_URL);
-        url.append("/check_connect?id=" + userId);
-        StringBuilder response = sendRequest(url, null);
-        if (response == null || response.length() == 0) {
-            throw new ServerConnectException();
-        }
-        JSONObject json;
+        url.append("/gcm_id");
+        String data = String.format("{token: ?, gcm_id: ?}", userId, gcmId);
         try {
-            json = new JSONObject(response.toString());
-            switch (Status.valueOf(json.getString("status"))) {
-                case OK :
-                    break;
-                default:
-                    throw new InitialServerException();
-            }
-        } catch (JSONException | IllegalArgumentException e) {
-            throw new InitialServerException();
-        }
+            StringBuilder response = sendRequest(url, data);
+        } catch (BadRequestException | ForbiddenException | NotFoundException | NonAuthoritativeException ignore) {}
     }
 
-    public NmapScanResult sendAPIRequest(String request) throws
-            ServerConnectException, InitialServerException, BadSessionIdException, BadRequestException {
-        if (userId == 0) {
-            throw new BadSessionIdException();
-        }
+    public void checkConnect() throws ServerConnectException, InitialServerException {
         StringBuilder url = new StringBuilder(SERVER_URL);
-        url.append("/api_request?id=" + userId);
-        StringBuilder response = sendRequest(url, request);
-        if (response == null || response.length() == 0) {
-            throw new ServerConnectException();
-        }
-        JSONObject json;
+        url.append("/check_connect");
         try {
-            json = new JSONObject(response.toString());
-            switch (Status.valueOf(json.getString("status"))) {
-                case OK :
-                    return new NmapScanResultParser().parse(json.getString("result"));
-                case WAIT :
-                    return null;
-                case BAD_ID :
-                    throw new BadSessionIdException();
-                case BAD_REQUEST :
-                    throw new BadRequestException();
-                default:
-                    throw new InitialServerException();
-            }
-        } catch (JSONException | ParserConfigurationException | IOException | SAXException e) {
-            throw new InitialServerException();
-        }
+            StringBuilder response = sendRequest(url, null);
+        } catch (BadRequestException | ForbiddenException | NotFoundException | NonAuthoritativeException ignore) {}
     }
 }

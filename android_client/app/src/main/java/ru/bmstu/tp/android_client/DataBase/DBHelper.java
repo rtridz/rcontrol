@@ -13,19 +13,13 @@ public class DBHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(DBSchemas.SQL_CREATE_TABLE_USER);
-        db.execSQL(DBSchemas.SQL_CREATE_TABLE_USING_CONTROLLER);
-        db.execSQL(DBSchemas.SQL_CREATE_TABLE_CONTROLLER);
-        db.execSQL(DBSchemas.SQL_CREATE_TABLE_BUTTON);
-        db.execSQL(DBSchemas.SQL_CREATE_TABLE_HISTORY);
+        db.execSQL(DBSchemas.SQL_CREATE_TABLE_FRIEND);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(DBSchemas.SQL_DELETE_USER);
-        db.execSQL(DBSchemas.SQL_DELETE_USING_CONTROLLER);
-        db.execSQL(DBSchemas.SQL_DELETE_CONTROLLER);
-        db.execSQL(DBSchemas.SQL_DELETE_BUTTON);
-        db.execSQL(DBSchemas.SQL_DELETE_HISTORY);
+        db.execSQL(DBSchemas.SQL_DELETE_FREIND);
         onCreate(db);
     }
 }

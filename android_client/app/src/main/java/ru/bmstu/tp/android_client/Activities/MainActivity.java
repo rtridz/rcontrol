@@ -13,7 +13,7 @@ import android.widget.Toast;
 import ru.bmstu.tp.android_client.R;
 
 
-public class FindDeviceActivity extends FragmentActivity implements View.OnClickListener {
+public class MainActivity extends FragmentActivity implements View.OnClickListener {
 
     final String LOG_TAG = "myLogs";
     ViewPager pager;
@@ -24,7 +24,7 @@ public class FindDeviceActivity extends FragmentActivity implements View.OnClick
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_find_device);
 
-        Log.w(LOG_TAG, "FindDeviceActivity onCreate");
+        Log.w(LOG_TAG, "MainActivity onCreate");
     }
 
     @Override
@@ -33,27 +33,27 @@ public class FindDeviceActivity extends FragmentActivity implements View.OnClick
 
     protected void onStart() {
         super.onStart();
-        Log.w(LOG_TAG, "FindDeviceActivity onStart");
+        Log.w(LOG_TAG, "MainActivity onStart");
     }
 
     protected void onResume() {
         super.onResume();
-        Log.w(LOG_TAG, "FindDeviceActivity onResume");
+        Log.w(LOG_TAG, "MainActivity onResume");
     }
 
     protected void onPause() {
         super.onPause();
-        Log.w(LOG_TAG, "FindDeviceActivity onPause");
+        Log.w(LOG_TAG, "MainActivity onPause");
     }
 
     protected void onStop() {
         super.onStop();
-        Log.w(LOG_TAG, "FindDeviceActivity onStop");
+        Log.w(LOG_TAG, "MainActivity onStop");
     }
 
     protected void onDestroy() {
 
         super.onDestroy();
-        Log.w(LOG_TAG, "FindDeviceActivity onDestroy");
+        Log.w(LOG_TAG, "MainActivity onDestroy");
     }
 }

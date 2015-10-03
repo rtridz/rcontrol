@@ -2,6 +2,7 @@ package ru.bmstu.tp.android_client.Utils;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.AsyncTask;
@@ -15,8 +16,9 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import ru.bmstu.tp.android_client.DataBase.DBContentProvider;
 import ru.bmstu.tp.android_client.DataBase.DBSchemas;
+import ru.bmstu.tp.android_client.Services.APIService;
 import ru.bmstu.tp.android_client.Services.Exceptions.BadRequestException;
-import ru.bmstu.tp.android_client.Services.Exceptions.BadSessionIdException;
+import ru.bmstu.tp.android_client.Services.Exceptions.BadUserIdException;
 import ru.bmstu.tp.android_client.Services.Exceptions.InitialServerException;
 import ru.bmstu.tp.android_client.Services.Exceptions.ServerConnectException;
 import ru.bmstu.tp.android_client.Services.APISender;
@@ -149,18 +151,14 @@ public class GcmHelper {
     }
 
     private void sendRegistrationIdToBackend(String regId) {
-        Cursor cursor = null;
-        try {
-            cursor = activity.getContentResolver().query(DBContentProvider.USER_URI, new String[]{DBSchemas.User.USER_ID}, null, null, null);
-            if (cursor.moveToFirst()) new APISender(cursor.getInt(0)).sendGcmId(regId);
-            cursor.close();
-        } catch (ServerConnectException | InitialServerException | BadSessionIdException | BadRequestException e) {
-            e.printStackTrace();
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+        Cursor cursor = activity.getContentResolver().query(DBContentProvider.USER_URI, new String[]{DBSchemas.User.USER_ID}, null, null, null);
+        if (cursor.moveToFirst()) {
+            Intent intent = new Intent();
+            intent.setAction(APIService.Action.GCM_ID.toString());
+            intent.putExtra("gcm_id", regId);
+            new APIService().onBind(intent);
         }
+        cursor.close();
     }
 
     /**

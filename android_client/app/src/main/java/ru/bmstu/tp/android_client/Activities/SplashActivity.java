@@ -40,7 +40,7 @@ public class SplashActivity extends Activity {
         @Override
         protected void onPostExecute(Object result) {
             super.onPostExecute(result);
-            Intent i = new Intent(SplashActivity.this, FindDeviceActivity.class);
+            Intent i = new Intent(SplashActivity.this, MainActivity.class);
             startActivity(i);
             finish();
         }
